@@ -510,3 +510,98 @@
 .roxy::after { content: none; }
 
 .inside__chips button.is-wall { background: #ffc21a; }
+
+/* ---------- calm inside ---------- */
+.welcome {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  top: 1.6rem;
+  transform: translate(-50%, -10px);
+  display: grid;
+  gap: 0.15rem;
+  text-align: center;
+  padding: 0.7rem 1.3rem;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 0.6rem;
+  box-shadow: 4px 4px 0 var(--ink);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.welcome.is-on { opacity: 1; transform: translate(-50%, 0); }
+.welcome strong { font-family: var(--font-hand); font-size: 1.3rem; font-weight: 400; }
+.welcome span { font-size: 0.75rem; font-weight: 700; }
+
+.panel__nav { display: flex; gap: 0.5rem; margin-top: 0.3rem; }
+.panel__nav button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.95rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+.panel__nav button:hover:not(:disabled) { background: #ffc21a; transform: translateY(-2px); }
+.panel__nav button:disabled { opacity: 0.4; cursor: default; }
+.panel__close:focus-visible, .panel__nav button:focus-visible { outline: 3px solid #ffc21a; outline-offset: 3px; }
+
+.inside.in-gallery .welcome { opacity: 0; visibility: hidden; }
+
+@media (max-width: 800px) {
+  .welcome { top: 5.2rem; width: calc(100vw - 2rem); }
+}
+
+/* ---------- Explore group ---------- */
+.explore { position: relative; }
+.explore__menu {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.6rem);
+  transform: translate(-50%, 8px);
+  min-width: 15rem;
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 0.7rem;
+  box-shadow: 5px 5px 0 var(--ink);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s linear 0.25s;
+}
+.explore__menu.is-on {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+.inside__chips .explore__menu button {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.6rem 0.9rem;
+  text-align: left;
+  font-size: 0.85rem;
+  font-weight: 800;
+  background: transparent;
+  border: 0;
+  border-radius: 0.45rem;
+}
+.inside__chips .explore__menu button:hover,
+.inside__chips .explore__menu button:focus-visible { background: #ffc21a; transform: none; }
+.explore__menu small { font-size: 0.7rem; font-weight: 600; opacity: 0.7; }
+
+@media (max-width: 800px) {
+  .explore__menu { left: auto; right: 0; transform: translate(0, 8px); }
+  .explore__menu.is-on { transform: none; }
+}

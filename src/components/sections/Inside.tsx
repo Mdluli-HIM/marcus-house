@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { ArrowUpRight, DoorClosed, Volume2, VolumeX, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, DoorClosed, Volume2, VolumeX, X } from "lucide-react";
 import { gsap } from "@/lib/gsap";
 import { hotspots } from "@/data/inside";
 import { cafe, type SfxName } from "@/lib/audio";
@@ -59,6 +59,8 @@ export default function Inside({ active, onExit }: { active: boolean; onExit: ()
   const [lampOn, setLampOn] = useState(true);
   const [pops, setPops] = useState<Pop[]>([]);
   const [gallery, setGallery] = useState(false);
+  const [welcome, setWelcome] = useState(false);
+  const [explore, setExplore] = useState(false);
   const galleryRef = useRef(false);
   const galleryTimer = useRef<number | null>(null);
   const [wall, setWall] = useState(false);
@@ -78,7 +80,7 @@ export default function Inside({ active, onExit }: { active: boolean; onExit: ()
     const vh = window.innerHeight;
     const small = vw < 800;
     const h = hotspots[i];
-    const s = small ? h.zoom * 0.8 : h.zoom;
+    const s = small ? h.zoom * 0.75 : h.zoom * 0.9;
     const sw = stage.offsetWidth;
     const sh = stage.offsetHeight;
     const ox = stage.offsetLeft;
@@ -91,8 +93,8 @@ export default function Inside({ active, onExit }: { active: boolean; onExit: ()
       scale: s,
       x: gsap.utils.clamp(vw - s * (ox + sw), -s * ox, tx - s * px),
       y: gsap.utils.clamp(vh - s * (oy + sh), -s * oy, ty - s * py),
-      duration: 1.3,
-      ease: "expo.inOut",
+      duration: 1.6,
+      ease: "power3.inOut",
       overwrite: true,
     });
     openRef.current = i;
@@ -104,7 +106,7 @@ export default function Inside({ active, onExit }: { active: boolean; onExit: ()
 
   const close = useCallback(() => {
     const c = find(root.current, ".inside__cam");
-    if (c) gsap.to(c, { scale: 1, x: 0, y: 0, duration: 1.1, ease: "expo.inOut", overwrite: true });
+    if (c) gsap.to(c, { scale: 1, x: 0, y: 0, duration: 1.4, ease: "power3.inOut", overwrite: true });
     openRef.current = -1;
     setOpen(-1);
     cafe.setFocus(false);
@@ -137,6 +139,56 @@ export default function Inside({ active, onExit }: { active: boolean; onExit: ()
   }, [active]);
   useEffect(() => () => cafe.setPresent(false), []);
 
+  /* the Explore menu closes on Esc, on an outside click, and when you leave */
+  useEffect(() => {
+    if (!active) setExplore(false);
+  }, [active]);
+  useEffect(() => {
+    if (!explore) return;
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setExplore(false);
+    };
+    const away = (e: PointerEvent) => {
+      if (!(e.target as HTMLElement).closest(".explore")) setExplore(false);
+    };
+    window.addEventListener("keydown", key);
+    window.addEventListener("pointerdown", away);
+    return () => {
+      window.removeEventListener("keydown", key);
+      window.removeEventListener("pointerdown", away);
+    };
+  }, [explore]);
+
+  /* each room has its own music */
+  useEffect(() => {
+    cafe.setScene(gallery ? "gallery" : wall ? "jazz" : "cafe");
+  }, [gallery, wall]);
+
+  /* a calm welcome when you step in */
+  useEffect(() => {
+    if (!active) {
+      setWelcome(false);
+      return;
+    }
+    setWelcome(true);
+    const a = window.setTimeout(() => cafe.play("bell"), 500);
+    const b = window.setTimeout(() => setWelcome(false), 7000);
+    return () => {
+      window.clearTimeout(a);
+      window.clearTimeout(b);
+    };
+  }, [active]);
+
+  /* an opened panel takes keyboard focus */
+  useEffect(() => {
+    if (open < 0) return;
+    setWelcome(false);
+    const t = window.setTimeout(() => {
+      (root.current?.querySelector(".panel__close") as HTMLElement | null)?.focus({ preventScroll: true });
+    }, 900);
+    return () => window.clearTimeout(t);
+  }, [open]);
+
   /* keyboard: Esc closes, arrows step through the room */
   useEffect(() => {
     if (!active) return;
@@ -147,7 +199,7 @@ export default function Inside({ active, onExit }: { active: boolean; onExit: ()
       if (e.key === "Escape") {
         close();
       } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-        if (cu < last) {
+        if (cu >= 0 && cu < last) {
           e.preventDefault();
           go(cu + 1);
         }
@@ -175,7 +227,7 @@ export default function Inside({ active, onExit }: { active: boolean; onExit: ()
       if (e.deltaY === 0) return;
       const cu = openRef.current;
       const dir = e.deltaY > 0 ? 1 : -1;
-      if ((dir > 0 && cu >= hotspots.length - 1) || (dir < 0 && cu < 0)) return;
+      if (cu < 0 || (dir > 0 && cu >= hotspots.length - 1)) return;
       e.preventDefault();
       e.stopPropagation();
       const t = performance.now();
@@ -624,7 +676,12 @@ export default function Inside({ active, onExit }: { active: boolean; onExit: ()
         <i className="cur__ring" />
       </div>
 
-      <p className="inside__hint">Press things. Scroll to wander the room.</p>
+      <p className="inside__hint">Press a glowing spot to look around</p>
+
+      <div className={`welcome ${welcome && open < 0 ? "is-on" : ""}`} aria-hidden="true">
+        <strong>Welcome in.</strong>
+        <span>Nothing opens until you press it. Esc steps back.</span>
+      </div>
 
       <button className="inside__exit" onClick={onExit} tabIndex={active ? 0 : -1}>
         <DoorClosed size={16} /> Step outside
@@ -654,12 +711,41 @@ export default function Inside({ active, onExit }: { active: boolean; onExit: ()
             {s.label}
           </button>
         ))}
-        <button onClick={openGallery} tabIndex={active ? 0 : -1}>
-          Art wall
-        </button>
-        <button className="is-wall" onClick={openWall} tabIndex={active ? 0 : -1}>
-          Project wall ↓
-        </button>
+        <div className="explore">
+          <button
+            className={`is-wall ${explore ? "is-on" : ""}`}
+            onClick={() => setExplore((v) => !v)}
+            aria-expanded={explore}
+            aria-haspopup="menu"
+            tabIndex={active ? 0 : -1}
+          >
+            Explore {explore ? "▴" : "▾"}
+          </button>
+          <div className={`explore__menu ${explore ? "is-on" : ""}`} role="menu">
+            <button
+              role="menuitem"
+              tabIndex={explore ? 0 : -1}
+              onClick={() => {
+                setExplore(false);
+                openGallery();
+              }}
+            >
+              Art wall
+              <small>Pieces I made with code</small>
+            </button>
+            <button
+              role="menuitem"
+              tabIndex={explore ? 0 : -1}
+              onClick={() => {
+                setExplore(false);
+                openWall();
+              }}
+            >
+              Projects
+              <small>Selected work and the archive</small>
+            </button>
+          </div>
+        </div>
       </nav>
 
       <aside
@@ -671,7 +757,7 @@ export default function Inside({ active, onExit }: { active: boolean; onExit: ()
             <button className="panel__close" onClick={close} aria-label="Close">
               <X size={18} />
             </button>
-            <span className="panel__kicker">{h.kicker}</span>
+            <span className="panel__kicker">{h.kicker} · {String(open + 1).padStart(2, "0")} / {String(hotspots.length).padStart(2, "0")}</span>
             <h3>{h.title}</h3>
             {h.paragraphs.map((p) => (
               <p key={p}>{p}</p>
@@ -688,7 +774,15 @@ export default function Inside({ active, onExit }: { active: boolean; onExit: ()
                 {h.cta.label} <ArrowUpRight size={18} />
               </a>
             )}
-          </>
+          <div className="panel__nav">
+              <button onClick={() => (open === 0 ? close() : pick(open - 1))}>
+                <ArrowLeft size={16} /> {open === 0 ? "Close" : "Prev"}
+              </button>
+              <button disabled={open >= hotspots.length - 1} onClick={() => pick(open + 1)}>
+                Next <ArrowRight size={16} />
+              </button>
+            </div>
+            </>
         )}
       </aside>
     </div>

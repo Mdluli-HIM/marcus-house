@@ -1,6 +1,6 @@
 export type SfxName =
   | "tick" | "whoosh" | "chime" | "keys" | "page" | "chalk"
-  | "clink" | "ring" | "woof" | "board" | "lamp" | "gull" | "yawn" | "boof";
+  | "clink" | "ring" | "woof" | "board" | "lamp" | "gull" | "yawn" | "boof" | "bell";
 
 const BPM = 72;
 const EIGHTH = 60 / BPM / 2;
@@ -14,6 +14,29 @@ const CHORDS = [
   { root: 45, notes: [52, 55, 60, 64] },
 ];
 const PENTA = [72, 74, 76, 79, 81];
+
+export type Scene = "cafe" | "gallery" | "jazz";
+const SCENES = {
+  cafe: { bpm: 72, lp: 3800, gain: 0.55, crackle: 0.12, murmur: 0.03 },
+  gallery: { bpm: 54, lp: 5200, gain: 0.62, crackle: 0.03, murmur: 0.012 },
+  jazz: { bpm: 92, lp: 2300, gain: 0.62, crackle: 0.24, murmur: 0.012 },
+};
+
+/* gallery: Cmaj9 | Am9 | Fmaj7 | G6/9 */
+const GCHORDS = [
+  [48, 55, 59, 64, 71],
+  [45, 52, 59, 64, 67],
+  [41, 48, 57, 64, 69],
+  [43, 50, 59, 62, 69],
+];
+/* jazz: Dm7 | G7 | Cmaj7 | A7, with a walking bass line and piano shells */
+const JAZZ = [
+  { walk: [38, 41, 45, 42], comp: [53, 57, 60, 64] },
+  { walk: [43, 47, 50, 47], comp: [53, 59, 62, 65] },
+  { walk: [36, 40, 43, 47], comp: [52, 55, 59, 62] },
+  { walk: [45, 49, 52, 49], comp: [55, 61, 64, 67] },
+];
+const JM = [74, 76, 79, 81, 86];
 
 class CafeAudio {
   private ctx: AudioContext | null = null;
@@ -29,6 +52,11 @@ class CafeAudio {
   private stopT = 0;
   private nextTime = 0;
   private step = 0;
+  private scene: Scene = "cafe";
+  private eighth = EIGHTH;
+  private lpBase = 3800;
+  private crackle: GainNode | null = null;
+  private murmur: GainNode | null = null;
 
   get enabled() {
     return this.on;
@@ -120,6 +148,7 @@ class CafeAudio {
     chp.frequency.value = 1500;
     const cg = c.createGain();
     cg.gain.value = 0.12;
+    this.crackle = cg;
     cs.connect(chp);
     chp.connect(cg);
     cg.connect(this.musicBus);
@@ -134,6 +163,7 @@ class CafeAudio {
     bp.Q.value = 0.6;
     const mg = c.createGain();
     mg.gain.value = 0.03;
+    this.murmur = mg;
     const lfo = c.createOscillator();
     lfo.frequency.value = 0.13;
     const lg = c.createGain();
@@ -240,6 +270,8 @@ class CafeAudio {
   }
 
   private schedule(step: number, t0: number) {
+    if (this.scene === "gallery") return this.scheduleGallery(step, t0);
+    if (this.scene === "jazz") return this.scheduleJazz(step, t0);
     const t = t0 + (step % 2 === 1 ? EIGHTH * 0.16 : 0);
     const bar = Math.floor(step / 8) % 4;
     const pos = step % 8;
@@ -267,10 +299,83 @@ class CafeAudio {
     if (this.nextTime < c.currentTime - 0.5) this.nextTime = c.currentTime + 0.05;
     while (this.nextTime < c.currentTime + 0.35) {
       this.schedule(this.step, this.nextTime);
-      this.nextTime += EIGHTH;
+      this.nextTime += this.eighth;
       this.step = (this.step + 1) % 32;
     }
   };
+
+  private scheduleGallery(step: number, t: number) {
+    const bar = Math.floor(step / 8) % 4;
+    const pos = step % 8;
+    const ch = GCHORDS[bar];
+    if (pos === 0) {
+      ch.forEach((n, i) => {
+        this.osc("sine", mtof(n), t + i * 0.12, 1.4, 4.4, 0.045, this.musicBus);
+        this.osc("triangle", mtof(n) * 1.003, t + i * 0.12, 1.8, 4.2, 0.012, this.musicBus);
+      });
+      this.osc("sine", mtof(ch[0] - 12), t, 1.6, 5, 0.1, this.musicBus);
+    }
+    if ((pos === 2 || pos === 5) && Math.random() < 0.55) {
+      this.ep(PENTA[Math.floor(Math.random() * PENTA.length)] - 12, t, 0.06, 3);
+    }
+    if (pos % 2 === 1 && Math.random() < 0.18) {
+      this.bell(PENTA[Math.floor(Math.random() * PENTA.length)] + (Math.random() < 0.5 ? 12 : 0), t);
+    }
+    if (Math.random() < 0.03) this.hit(t, 0.001, 0.06, 0.05, "bandpass", 700, 1.5, this.musicBus);
+  }
+
+  private scheduleJazz(step: number, t0: number) {
+    const t = t0 + (step % 2 === 1 ? this.eighth * 0.33 : 0);
+    const bar = Math.floor(step / 8) % 4;
+    const pos = step % 8;
+    const j = JAZZ[bar];
+    const comp = (vel: number) =>
+      j.comp.forEach((n, i) => this.ep(n, t + i * 0.01, vel - i * 0.008, 1.0));
+
+    if (pos % 2 === 0) {
+      this.bass(j.walk[pos / 2], t, 0.42);
+      this.kick(t, 0.12);
+      this.hit(t, 0.001, 0.2, 0.04, "highpass", 6500, 0.6, this.musicBus);
+    }
+    if (pos === 3 || pos === 7) {
+      this.hit(t, 0.001, 0.14, 0.03, "highpass", 6500, 0.6, this.musicBus);
+      if (Math.random() < 0.25) this.hit(t, 0.003, 0.12, 0.05, "bandpass", 2500, 0.8, this.musicBus);
+    }
+    if (pos === 2 || pos === 6) this.hit(t, 0.001, 0.05, 0.05, "highpass", 8200, 0.7, this.musicBus);
+
+    if (pos === 3 && Math.random() < 0.85) comp(0.11);
+    if (pos === 6 && Math.random() < 0.45) comp(0.09);
+    if (pos === 0 && Math.random() < 0.4) comp(0.08);
+    if ((pos === 1 || pos === 5 || pos === 7) && Math.random() < 0.2) {
+      this.ep(JM[Math.floor(Math.random() * JM.length)], t, 0.07, 1.3);
+    }
+  }
+
+  /* ---------- scenes ---------- */
+  setScene(s: Scene) {
+    if (s === this.scene) return;
+    this.scene = s;
+    this.step = 0;
+    this.eighth = 60 / SCENES[s].bpm / 2;
+    const c = this.ctx;
+    if (!c) return;
+    this.musicBus.gain.cancelScheduledValues(c.currentTime);
+    this.musicBus.gain.setTargetAtTime(0.0001, c.currentTime, 0.12);
+    window.setTimeout(() => this.applyScene(), 450);
+  }
+
+  private applyScene() {
+    const c = this.ctx;
+    if (!c) return;
+    const t = c.currentTime;
+    const sc = SCENES[this.scene];
+    this.lpBase = sc.lp;
+    this.musicLP.frequency.setTargetAtTime(sc.lp, t, 0.2);
+    this.musicBus.gain.setTargetAtTime(sc.gain, t, 0.4);
+    this.crackle?.gain.setTargetAtTime(sc.crackle, t, 0.3);
+    this.murmur?.gain.setTargetAtTime(sc.murmur, t, 0.3);
+    this.nextTime = t + 0.1;
+  }
 
   /* ---------- controls ---------- */
   setPresent(v: boolean) {
@@ -281,6 +386,7 @@ class CafeAudio {
   /* must be called from a click */
   toggle(): boolean {
     this.init();
+    this.applyScene();
     this.on = !this.on;
     this.apply();
     return this.on;
@@ -291,8 +397,8 @@ class CafeAudio {
     const c = this.ctx;
     if (!c) return;
     const t = c.currentTime;
-    this.musicLP.frequency.setTargetAtTime(on ? 900 : 3800, t, 0.25);
-    this.musicBus.gain.setTargetAtTime(on ? 0.34 : 0.55, t, 0.3);
+    this.musicLP.frequency.setTargetAtTime(on ? 900 : this.lpBase, t, 0.25);
+    this.musicBus.gain.setTargetAtTime(on ? 0.34 : SCENES[this.scene].gain, t, 0.3);
   }
 
   private apply() {
@@ -379,6 +485,10 @@ class CafeAudio {
         this.hit(t, 0.001, 0.02, 0.25, "bandpass", 1800, 3, d);
         this.osc("sine", 90, t, 0.002, 0.1, 0.25, d, { f2: 55 });
         this.hit(t + 0.09, 0.001, 0.02, 0.18, "bandpass", 1400, 3, d);
+        break;
+      case "bell":
+        [1568, 2093].forEach((f, i) => this.osc("sine", f, t + i * 0.18, 0.003, 1.6, 0.08, d));
+        this.osc("sine", 3136, t, 0.002, 0.6, 0.025, d);
         break;
       case "boof":
         this.bark(t, 0.55);
