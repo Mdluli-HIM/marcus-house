@@ -1,0 +1,210 @@
+/* ---------- the crate hotspot on the project wall ---------- */
+.crate {
+  position: absolute;
+  z-index: 3;
+  background: transparent;
+  cursor: pointer;
+  outline: 2px dashed transparent;
+  outline-offset: 4px;
+  transition: outline-color 0.3s ease;
+}
+.crate:hover { outline-color: var(--ink); }
+.crate:focus-visible { outline: 3px solid #ffc21a; outline-offset: 4px; }
+.crate__dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2.6rem;
+  height: 2.6rem;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.crate__dot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  animation: ping 2.2s ease-out infinite;
+}
+.crate__dot::after {
+  content: "";
+  position: absolute;
+  inset: 30%;
+  border-radius: 50%;
+  background: #e11d2e;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.crate__tag {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 1.9rem);
+  transform: translateX(-50%);
+  padding: 0.25rem 0.75rem;
+  font-family: var(--font-hand);
+  font-size: 1rem;
+  white-space: nowrap;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 0.4rem;
+  box-shadow: 3px 3px 0 var(--ink);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.crate:hover .crate__tag,
+.crate:focus-visible .crate__tag { opacity: 1; }
+
+/* ---------- the archive page ---------- */
+.archive {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  background: inherit;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  color: var(--ink);
+}
+.archive.is-open { pointer-events: auto; }
+.archive__inner {
+  height: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 6.5rem var(--gutter) 6rem;
+  display: grid;
+  grid-template-columns: minmax(300px, 400px) 1fr;
+  gap: clamp(2rem, 5vw, 5rem);
+}
+.archive__side { display: grid; align-content: start; gap: 1.2rem; min-height: 0; }
+.archive__count { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+.archive__title {
+  font-family: var(--font-hand);
+  font-weight: 400;
+  font-size: clamp(3rem, 7vw, 6rem);
+  line-height: 1;
+}
+
+.adetail {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1.5rem 1.6rem 1.7rem;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 0.7rem;
+  box-shadow: 8px 8px 0 var(--ink);
+  animation: adIn 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes adIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.adetail__kicker { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+.adetail h3 {
+  font-size: clamp(1.7rem, 2.6vw, 2.3rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+.adetail p { font-size: 0.95rem; line-height: 1.5; }
+.atags { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.atags li {
+  padding: 0.2rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1.5px solid var(--ink);
+  border-radius: 99px;
+}
+.alinks { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.3rem; }
+.alinks__soon { font-size: 0.8rem; opacity: 0.65; }
+
+/* the crate of sleeves */
+.archive__grid {
+  min-height: 0;
+  overflow-y: auto;
+  touch-action: pan-y;
+  scrollbar-width: none;
+  padding: 1.6rem 3.2rem 2rem 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2.6rem 3.4rem;
+  align-content: start;
+}
+.archive__grid::-webkit-scrollbar { display: none; }
+
+.sleeve { display: block; text-align: left; }
+.sleeve__art {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.sleeve:hover .sleeve__art,
+.sleeve.is-sel .sleeve__art,
+.sleeve:focus-visible .sleeve__art { transform: translateY(-8px) rotate(-1deg); }
+.sleeve:focus-visible { outline: 3px solid #ffc21a; outline-offset: 6px; }
+
+.sleeve__disc {
+  position: absolute;
+  top: 6%;
+  right: 0;
+  width: 88%;
+  height: 88%;
+  border-radius: 50%;
+  background: repeating-radial-gradient(#17140f 0 2px, #26221b 2px 4px);
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.sleeve__disc::after {
+  content: "";
+  position: absolute;
+  inset: 34%;
+  border-radius: 50%;
+  background: var(--c1);
+}
+.sleeve:hover .sleeve__disc,
+.sleeve.is-sel .sleeve__disc,
+.sleeve:focus-visible .sleeve__disc { transform: translateX(22%); }
+
+.sleeve__cover {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--c1) 0 50%, var(--c2) 50% 100%);
+  border: 2px solid var(--ink);
+  box-shadow: 0 10px 14px -10px rgba(0, 0, 0, 0.5);
+}
+.sleeve__cover img { width: 100%; height: 100%; object-fit: cover; user-select: none; }
+.sleeve__cover b {
+  font-size: clamp(2rem, 4.5vw, 4.5rem);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  color: var(--paper);
+  mix-blend-mode: difference;
+}
+.sleeve.is-sel .sleeve__cover { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+.sleeve__cap { display: grid; gap: 0.1rem; margin-top: 0.9rem; }
+.sleeve__cap strong { font-size: 0.88rem; font-weight: 800; letter-spacing: -0.01em; }
+.sleeve__cap small { font-size: 0.72rem; opacity: 0.7; }
+
+@media (max-width: 900px) {
+  .archive__inner {
+    display: block;
+    overflow-y: auto;
+    touch-action: pan-y;
+    padding: 5.5rem var(--gutter) 6rem;
+  }
+  .archive__side { margin-bottom: 2rem; }
+  .archive__grid {
+    overflow: visible;
+    padding: 1.2rem 1.6rem 1rem 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.8rem 2.4rem;
+  }
+  .archive .wallv__back { top: auto; bottom: var(--gutter); }
+}

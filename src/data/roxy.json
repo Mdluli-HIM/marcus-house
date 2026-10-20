@@ -1,0 +1,16 @@
+{
+  "ready": true,
+  "born": "2025-09",
+  "box": {
+    "x": 24,
+    "y": 66,
+    "w": 25,
+    "h": 28
+  },
+  "poses": [
+    "sleep",
+    "wake",
+    "sit",
+    "bark"
+  ]
+}

@@ -1,0 +1,11 @@
+:root {
+  --bg: #0b0b0b;
+  --fg: #f2f2f2;
+  --muted: #8a8a8a;
+  --accent: #5b2bd6;
+  --paper: #e6e1d8;
+  --ink: #17140f;
+  --gutter: clamp(1.25rem, 3vw, 3rem);
+  --font-sans: var(--font-geist), system-ui, sans-serif;
+  --font-hand: var(--font-walter), cursive;
+}
