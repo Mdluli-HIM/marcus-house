@@ -323,3 +323,185 @@
 
 /* outside: only the active project shows a label */
 .world.has-active .node:not(.is-active) .node__label { opacity: 0; }
+
+/* ---------- guidance and the deliberate door ---------- */
+html.lenis-stopped { overflow: hidden; }
+
+.guide {
+  position: absolute;
+  z-index: 7;
+  left: 0;
+  right: 0;
+  top: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.guide.is-off { opacity: 0; }
+.guide__bar {
+  display: block;
+  height: 4px;
+  background: var(--ink);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+}
+.guide__hint {
+  position: absolute;
+  left: 50%;
+  top: 1.1rem;
+  transform: translate(-50%, -8px);
+  padding: 0.4rem 0.9rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 99px;
+  opacity: 0;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.guide__hint.is-on { opacity: 1; transform: translate(-50%, 0); }
+
+.doorcta {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  bottom: 2.2rem;
+  transform: translate(-50%, 16px);
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.5s ease, visibility 0s linear 0.5s;
+}
+.doorcta.is-on {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+  transition-delay: 0.3s, 0.3s, 0s;
+}
+.doorcta__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--paper);
+  background: var(--ink);
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 5px 5px 0 #ffc21a;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.doorcta__btn:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 #ffc21a; }
+.doorcta span {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+@media (max-width: 800px) {
+  .guide__hint { display: none; }
+  .doorcta { bottom: 5.6rem; }
+}
+
+/* ---------- guidance and the deliberate door ---------- */
+html.lenis-stopped { overflow: hidden; }
+
+.guide {
+  position: absolute;
+  z-index: 7;
+  left: 0;
+  right: 0;
+  top: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.guide.is-off { opacity: 0; }
+.guide__bar {
+  display: block;
+  height: 4px;
+  background: var(--ink);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+}
+.guide__hint {
+  position: absolute;
+  left: 50%;
+  top: 1.1rem;
+  transform: translate(-50%, -8px);
+  padding: 0.4rem 0.9rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 99px;
+  opacity: 0;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.guide__hint.is-on { opacity: 1; transform: translate(-50%, 0); }
+
+.doorcta {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  bottom: 2.2rem;
+  transform: translate(-50%, 16px);
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.5s ease, visibility 0s linear 0.5s;
+}
+.doorcta.is-on {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+  transition-delay: 0.3s, 0.3s, 0s;
+}
+.doorcta__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--paper);
+  background: var(--ink);
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 5px 5px 0 #ffc21a;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.doorcta__btn:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 #ffc21a; }
+.doorcta span {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+@media (max-width: 800px) {
+  .guide__hint { display: none; }
+  .doorcta { bottom: 5.6rem; }
+}

@@ -17,11 +17,13 @@ const DOOR = { x: 45.2, y: 53.2, w: 7.7, h: 28.2 };
 
 /* timeline units. 1 unit = PX_PER_UNIT viewport heights of scrolling */
 const TOUR_START = 1.0;
-const STEP = 2.6;
+const STEP = 3.0; // time per project
+const SETTLE = 1.4; // the camera has arrived this long after a step starts
 const PX_PER_UNIT = 0.5;
+const SNAP = true; // the scroll settles on each project. Set false for free scrolling.
 const n = projects.length;
 const END = TOUR_START + n * STEP;
-const ENTER_AT = END + 1.4; // door starts opening here // from here on the visitor is inside
+const DOOR_AT = END + SETTLE; // the camera is at the door
 
 const stepOf = (t: number) => {
   if (t < TOUR_START + 0.5) return -1;
@@ -46,11 +48,16 @@ export default function World() {
   const stRef = useRef<ScrollTrigger | null>(null);
   const durRef = useRef(1);
   const reduced = useRef(false);
+  const enterRef = useRef<ReturnType<typeof gsap.timeline> | null>(null);
+  const atDoorRef = useRef(false);
+  const phase = useRef<"outside" | "entering" | "inside">("outside");
 
   const [tick, setTick] = useState(0);
   const [active, setActive] = useState(-1);
   const [shown, setShown] = useState(0);
   const [inside, setInside] = useState(false);
+  const [atDoor, setAtDoor] = useState(false);
+  const [entering, setEntering] = useState(false);
 
   const setStep = useCallback((i: number) => {
     setActive(i);
@@ -105,7 +112,7 @@ export default function World() {
     { scope: root }
   );
 
-  /* the scroll tour, the door and the entrance */
+  /* the scroll tour, then the door */
   useGSAP(
     () => {
       const el = root.current!;
@@ -114,8 +121,10 @@ export default function World() {
 
       mm.add("(prefers-reduced-motion: reduce)", () => {
         reduced.current = true;
-        gsap.set(".world__intro", { display: "none" });
+        gsap.set([".world__intro", ".guide"], { display: "none" });
         gsap.set(".net__seg", { strokeDashoffset: 0 });
+        atDoorRef.current = true;
+        setAtDoor(true);
         setStep(0);
         return () => {
           reduced.current = false;
@@ -130,6 +139,7 @@ export default function World() {
 
         const cam = q(".world__cam");
         const stage = q(".world__stage");
+        const bar = q(".guide__bar");
         gsap.set(cam, { transformOrigin: "0 0" });
 
         /* where the camera must go so a point sits in the free part of the screen */
@@ -150,6 +160,7 @@ export default function World() {
         };
 
         const tl = gsap.timeline({ defaults: { ease: "none" } });
+        tl.addLabel("start", 0);
 
         /* opening overlay fades as soon as the visitor scrolls */
         tl.to(".world__intro", { autoAlpha: 0, y: -20, duration: 0.6, ease: "power1.in" }, 0);
@@ -158,7 +169,8 @@ export default function World() {
         const S = small ? 1.5 : 1.7;
         projects.forEach((p, i) => {
           const t = TOUR_START + i * STEP;
-          tl.to(cam, { ...focus(p.spot.x, p.spot.y, S), duration: 1.4, ease: "power2.inOut" }, t);
+          tl.to(cam, { ...focus(p.spot.x, p.spot.y, S), duration: SETTLE, ease: "power2.inOut" }, t);
+          tl.addLabel(`p${i}`, t + SETTLE);
           if (i > 0) {
             tl.fromTo(
               `.net__seg[data-i="${i}"]`,
@@ -169,18 +181,27 @@ export default function World() {
           }
         });
 
-        /* the entrance: push into the door, swing it open, bloom into the room */
+        /* the scroll ends in front of the door. Opening it is a separate, deliberate press. */
         const dcx = DOOR.x + DOOR.w / 2;
         const dcy = DOOR.y + DOOR.h / 2;
-        tl.to(cam, { ...focus(dcx, dcy, small ? 3 : 3.6, true), duration: 1.4, ease: "power2.inOut" }, END);
-        tl.to({}, { duration: 2.5 }, END + 1.4); // scroll room while inside
+        tl.to(cam, { ...focus(dcx, dcy, small ? 3 : 3.6, true), duration: SETTLE, ease: "power2.inOut" }, END);
+        tl.addLabel("door", DOOR_AT);
+        tl.to({}, { duration: 1.4 }, DOOR_AT);
+
+        const D = tl.duration();
+        durRef.current = D;
 
         /* the entrance plays on its own clock, so it is always slow and gentle */
         const enter = gsap.timeline({
           paused: true,
           defaults: { ease: "none" },
           onComplete: () => {
+            phase.current = "inside";
             setInside(true);
+          },
+          onReverseComplete: () => {
+            phase.current = "outside";
+            setEntering(false);
             getLenis()?.start();
           },
         });
@@ -196,13 +217,10 @@ export default function World() {
             4.4
           )
           .to(".door__bloom", { autoAlpha: 0, duration: 1.6, ease: "sine.inOut" }, 4.8);
-
-        const D = tl.duration();
-        durRef.current = D;
+        enterRef.current = enter;
 
         let last = -2;
-        let wasInside = false;
-        let gated = false;
+        let wasDoor = false;
         tl.eventCallback("onUpdate", () => {
           const t = tl.time();
           const idx = stepOf(t);
@@ -210,17 +228,13 @@ export default function World() {
             last = idx;
             setStep(idx);
           }
-          const go = t >= ENTER_AT;
-          if (go !== wasInside) {
-            wasInside = go;
-            if (go) {
-              enter.timeScale(1).play();
-            } else {
-              gated = false;
-              setInside(false);
-              enter.timeScale(1.5).reverse();
-            }
+          const door = t >= DOOR_AT - 0.15;
+          if (door !== wasDoor) {
+            wasDoor = door;
+            atDoorRef.current = door;
+            setAtDoor(door);
           }
+          bar.style.transform = `scaleX(${Math.min(1, t / DOOR_AT)})`;
         });
 
         stRef.current = ScrollTrigger.create({
@@ -232,22 +246,22 @@ export default function World() {
           animation: tl,
           anticipatePin: 1,
           invalidateOnRefresh: true,
-          /* the door is a gate: hold the page still while it opens, or a normal
-             scroll carries the visitor past it before the entrance can play */
-          onUpdate: (self) => {
-            const lenis = getLenis();
-            if (gated || !lenis || self.direction < 0 || lenis.userData?.pass) return;
-            if (self.progress * D < ENTER_AT) return;
-            gated = true;
-            lenis.stop();
-            const y = self.start + ((ENTER_AT + 0.2) / D) * (self.end - self.start);
-            lenis.scrollTo(y, { immediate: true, force: true });
-          },
+          ...(SNAP
+            ? {
+                snap: {
+                  snapTo: "labels" as const,
+                  directional: true,
+                  delay: 0.15,
+                  duration: { min: 0.35, max: 1.1 },
+                  ease: "power2.inOut",
+                },
+              }
+            : {}),
         });
 
         return () => {
           stRef.current = null;
-          getLenis()?.start();
+          enterRef.current = null;
         };
       });
 
@@ -256,14 +270,24 @@ export default function World() {
     { scope: root, dependencies: [tick], revertOnUpdate: true }
   );
 
-  /* pass: glide straight through the door gate instead of stopping at it */
-  const scrollToT = (t: number, pass = true) => {
+  /* smooth scroll to a point in the timeline */
+  const scrollToY = (y: number, done?: () => void) => {
+    const l = getLenis();
+    if (l) {
+      l.scrollTo(y, {
+        duration: 1.8,
+        easing: (t: number) => 1 - Math.pow(1 - t, 4),
+        onComplete: () => done?.(),
+      });
+    } else {
+      window.scrollTo({ top: y, behavior: "smooth" });
+      if (done) window.setTimeout(done, 1200);
+    }
+  };
+  const scrollToT = (t: number, done?: () => void) => {
     const st = stRef.current;
     if (!st) return;
-    const y = st.start + (t / durRef.current) * (st.end - st.start);
-    const lenis = getLenis();
-    if (lenis) lenis.scrollTo(y, { duration: 1.6, userData: pass ? { pass: true } : undefined });
-    else window.scrollTo({ top: y, behavior: "smooth" });
+    scrollToY(st.start + (t / durRef.current) * (st.end - st.start), done);
   };
 
   /* click a neuron: scroll to its moment in the tour */
@@ -272,7 +296,17 @@ export default function World() {
       setStep(i);
       return;
     }
-    scrollToT(TOUR_START + i * STEP + 1.5);
+    scrollToT(TOUR_START + i * STEP + SETTLE);
+  };
+
+  /* opening the door is always a press */
+  const startEnter = () => {
+    const e = enterRef.current;
+    if (!e || phase.current !== "outside") return;
+    phase.current = "entering";
+    setEntering(true);
+    getLenis()?.stop();
+    e.timeScale(1).play();
   };
 
   const openDoor = () => {
@@ -281,7 +315,11 @@ export default function World() {
       setInside(true);
       return;
     }
-    scrollToT(ENTER_AT + 0.4, false);
+    if (atDoorRef.current) {
+      startEnter();
+      return;
+    }
+    scrollToT(DOOR_AT, () => window.setTimeout(startEnter, 800));
   };
 
   const leave = () => {
@@ -290,7 +328,8 @@ export default function World() {
       setInside(false);
       return;
     }
-    scrollToT(ENTER_AT - 0.8);
+    setInside(false);
+    enterRef.current?.timeScale(1.5).reverse();
   };
 
   const p = projects[shown];
@@ -345,17 +384,22 @@ export default function World() {
               key={pr.slug}
               className={`node ${active === i ? "is-active" : ""} ${active > i ? "is-seen" : ""}`}
               style={{ left: `${pr.spot.x}%`, top: `${pr.spot.y}%` }}
-              onClick={() => goTo(i)}
-              aria-label={`Project ${i + 1}: ${pr.title}`}
+              onClick={() => (pr.kind === "invite" && atDoor ? openDoor() : goTo(i))}
+              aria-label={pr.kind === "invite" ? "Open the door" : `Project ${i + 1}: ${pr.title}`}
             >
               <span className="node__dot" />
-              <span className="node__label">{pr.title}</span>
+              <span className="node__label">{pr.kind === "invite" && atDoor ? "Open the door" : pr.title}</span>
             </button>
           ))}
         </div>
       </div>
 
       <div className="world__lantern" aria-hidden="true" />
+
+      <div className={`guide ${inside || entering ? "is-off" : ""}`} aria-hidden="true">
+        <i className="guide__bar" />
+        <p className={`guide__hint ${active === 0 ? "is-on" : ""}`}>Keep scrolling. It stops at each project.</p>
+      </div>
 
       <div className="world__intro">
         <div className="world__badge">
@@ -416,7 +460,18 @@ export default function World() {
         ))}
       </nav>
 
-      {!inside && (
+      <div className={`doorcta ${atDoor && !entering && !inside ? "is-on" : ""}`}>
+        <button
+          className="doorcta__btn"
+          onClick={openDoor}
+          tabIndex={atDoor && !entering && !inside ? 0 : -1}
+        >
+          <DoorOpen size={18} /> Open the door
+        </button>
+        <span>{reduced.current ? "Step inside the studio" : "Not ready? Scroll up to look again"}</span>
+      </div>
+
+      {!inside && !entering && (
         <button className="world__skip" onClick={() => scrollToT(0.8)}>
           Skip the tour
         </button>
