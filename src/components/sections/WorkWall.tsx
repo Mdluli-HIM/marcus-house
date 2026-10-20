@@ -8,6 +8,7 @@ import { works, type Work } from "@/data/work";
 import { profile } from "@/data/profile";
 import wall from "@/data/workwall.json";
 import Archive from "@/components/sections/Archive";
+import ProjectPage, { type Origin } from "@/components/sections/ProjectPage";
 
 type Frame = { x: number; y: number; w: number; h: number };
 const frames = wall.frames as Frame[];
@@ -38,6 +39,35 @@ export default function WorkWall({ open, onClose }: { open: boolean; onClose: ()
   const [tip, setTip] = useState(0);
   const [arch, setArch] = useState(false);
   const archRef = useRef(false);
+  const [page, setPage] = useState(0);
+  const [pageOpen, setPageOpen] = useState(false);
+  const [origin, setOrigin] = useState<Origin>(null);
+  const pageRef = useRef(false);
+  const bootPage = useRef(-1);
+  const livePage = useRef(false);
+  useEffect(() => {
+    try {
+      bootPage.current = parseInt(sessionStorage.getItem("marcus:page") ?? "-1", 10);
+    } catch {}
+  }, []);
+  useEffect(() => {
+    if (!open) return;
+    if (bootPage.current >= 0) {
+      const i = bootPage.current;
+      bootPage.current = -1;
+      setOrigin(null);
+      setPage(i);
+      pageRef.current = true;
+      setPageOpen(true);
+    }
+    livePage.current = true;
+  }, [open]);
+  useEffect(() => {
+    if (!livePage.current) return;
+    try {
+      sessionStorage.setItem("marcus:page", pageOpen ? String(page) : "-1");
+    } catch {}
+  }, [pageOpen, page]);
 
   const items = frames.map((_, i) => works[i] ?? invite);
 
@@ -51,9 +81,12 @@ export default function WorkWall({ open, onClose }: { open: boolean; onClose: ()
       window.location.href = `mailto:${profile.email}`;
       return;
     }
-    setNote(`${w.title}: the full project page comes next.`);
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setNote(""), 3200);
+    const hit = root.current?.querySelectorAll(".wp__hit")[i] as HTMLElement | undefined;
+    const r = hit?.getBoundingClientRect();
+    setOrigin(r ? { x: r.left, y: r.top, w: r.width, h: r.height } : null);
+    setPage(i);
+    pageRef.current = true;
+    setPageOpen(true);
   };
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
@@ -90,6 +123,8 @@ export default function WorkWall({ open, onClose }: { open: boolean; onClose: ()
       gsap.to(el, { autoAlpha: 0, duration: 0.6, ease: "power2.in" });
       setHover(-1);
       setNote("");
+      pageRef.current = false;
+      setPageOpen(false);
       archRef.current = false;
       setArch(false);
     }
@@ -101,14 +136,17 @@ export default function WorkWall({ open, onClose }: { open: boolean; onClose: ()
     if (!el || !open) return;
     const key = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (archRef.current) {
+        if (pageRef.current) {
+          pageRef.current = false;
+          setPageOpen(false);
+        } else if (archRef.current) {
           archRef.current = false;
           setArch(false);
         } else onClose();
       }
     };
     const wheel = (e: WheelEvent) => {
-      if ((e.target as HTMLElement).closest(".archive__inner")) return;
+      if ((e.target as HTMLElement).closest(".archive__inner, .pgv__scroll")) return;
       e.preventDefault();
       e.stopPropagation();
     };
@@ -222,6 +260,20 @@ export default function WorkWall({ open, onClose }: { open: boolean; onClose: ()
           {pad(tip + 1)} · {items[tip].title} · View ↗
         </span>
       </div>
+
+      <ProjectPage
+        index={page}
+        open={pageOpen}
+        origin={origin}
+        onClose={() => {
+          pageRef.current = false;
+          setPageOpen(false);
+        }}
+        onGo={(i) => {
+          setOrigin(null);
+          setPage(i);
+        }}
+      />
 
       <Archive
         open={arch}

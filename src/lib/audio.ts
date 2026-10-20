@@ -1,6 +1,6 @@
 export type SfxName =
   | "tick" | "whoosh" | "chime" | "keys" | "page" | "chalk"
-  | "clink" | "ring" | "woof" | "board" | "lamp" | "gull" | "yawn" | "boof" | "bell";
+  | "clink" | "ring" | "woof" | "board" | "lamp" | "gull" | "yawn" | "boof" | "bell" | "shutter";
 
 const BPM = 72;
 const EIGHTH = 60 / BPM / 2;
@@ -53,6 +53,9 @@ class CafeAudio {
   private nextTime = 0;
   private step = 0;
   private scene: Scene = "cafe";
+  private zone: "outside" | "inside" = "outside";
+  private amb!: GainNode;
+  private nextGull = 0;
   private eighth = EIGHTH;
   private lpBase = 3800;
   private crackle: GainNode | null = null;
@@ -120,6 +123,7 @@ class CafeAudio {
     this.noise = nb;
 
     this.ambience(c);
+    this.outdoors(c);
     return c;
   }
 
@@ -296,6 +300,10 @@ class CafeAudio {
   private tick = () => {
     const c = this.ctx;
     if (!c) return;
+    if (this.zone === "outside") {
+      this.outTick(c);
+      return;
+    }
     if (this.nextTime < c.currentTime - 0.5) this.nextTime = c.currentTime + 0.05;
     while (this.nextTime < c.currentTime + 0.35) {
       this.schedule(this.step, this.nextTime);
@@ -351,6 +359,112 @@ class CafeAudio {
     }
   }
 
+  /* ---------- outside: the beach ---------- */
+  private outdoors(c: AudioContext) {
+    this.amb = c.createGain();
+    this.amb.gain.value = 0.0001;
+    this.amb.connect(this.master);
+
+    const layer = (type: BiquadFilterType, f: number, q: number, level: number) => {
+      const src = c.createBufferSource();
+      src.buffer = this.noise;
+      src.loop = true;
+      const flt = c.createBiquadFilter();
+      flt.type = type;
+      flt.frequency.value = f;
+      flt.Q.value = q;
+      const g = c.createGain();
+      g.gain.value = level;
+      src.connect(flt);
+      flt.connect(g);
+      g.connect(this.amb);
+      src.start(0, Math.random() * 1.5);
+      return { flt, g };
+    };
+    const swell = (param: AudioParam, rate: number, depth: number) => {
+      const lfo = c.createOscillator();
+      lfo.frequency.value = rate;
+      const lg = c.createGain();
+      lg.gain.value = depth;
+      lfo.connect(lg);
+      lg.connect(param);
+      lfo.start();
+    };
+
+    /* waves: a wash that rises and falls, foam hissing on top, a rumble underneath */
+    const wash = layer("lowpass", 520, 0.7, 0.1);
+    swell(wash.g.gain, 0.11, 0.07);
+    swell(wash.flt.frequency, 0.11, 260);
+    const foam = layer("bandpass", 2600, 0.5, 0.03);
+    swell(foam.g.gain, 0.083, 0.025);
+    const deep = layer("lowpass", 200, 0.6, 0.08);
+    swell(deep.g.gain, 0.06, 0.05);
+    /* a sea breeze */
+    const wind = layer("bandpass", 380, 0.4, 0.025);
+    swell(wind.g.gain, 0.047, 0.015);
+  }
+
+  private outTick(c: AudioContext) {
+    const t = c.currentTime + 0.05;
+    if (this.nextGull === 0) this.nextGull = t + 2 + Math.random() * 4;
+    if (t > this.nextGull) {
+      this.seagull(t);
+      this.nextGull = t + 6 + Math.random() * 12;
+    }
+    if (Math.random() < 0.0025) this.bikeBell(t);
+    if (Math.random() < 0.004) this.windChime(t);
+  }
+
+  private seagull(t: number) {
+    const c = this.ctx!;
+    const pan = c.createStereoPanner();
+    pan.pan.value = Math.random() * 1.6 - 0.8;
+    const lp = c.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 3200;
+    lp.connect(pan);
+    pan.connect(this.amb);
+    const calls = 2 + Math.floor(Math.random() * 3);
+    let at = t;
+    for (let i = 0; i < calls; i++) {
+      const f = 1500 + Math.random() * 450;
+      const d = 0.28 + Math.random() * 0.14;
+      this.osc("sawtooth", f, at, 0.03, d, 0.014, lp, { f2: f * 0.62 });
+      this.osc("sine", f * 1.01, at, 0.03, d, 0.05, lp, { f2: f * 0.6 });
+      at += d + 0.12;
+    }
+  }
+
+  private bikeBell(t: number) {
+    this.osc("sine", 2637, t, 0.002, 0.9, 0.025, this.amb);
+    this.osc("sine", 3520, t + 0.14, 0.002, 0.9, 0.02, this.amb);
+  }
+
+  private windChime(t: number) {
+    const n = 3 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < n; i++) {
+      const m = PENTA[Math.floor(Math.random() * PENTA.length)] + 12;
+      this.osc("sine", mtof(m), t + i * 0.2 + Math.random() * 0.08, 0.003, 1.8, 0.015, this.amb);
+    }
+  }
+
+  /* outside the beach plays and the music rests. Inside it is the other way round. */
+  setZone(z: "outside" | "inside") {
+    if (z === this.zone) return;
+    this.zone = z;
+    if (this.ctx) this.nextTime = this.ctx.currentTime + 0.1;
+    this.mix();
+  }
+
+  private mix() {
+    const c = this.ctx;
+    if (!c || !this.amb) return;
+    const t = c.currentTime;
+    const out = this.zone === "outside";
+    this.amb.gain.setTargetAtTime(out ? 1.4 : 0.0001, t, out ? 1.4 : 0.9);
+    this.musicBus.gain.setTargetAtTime(out ? 0.0001 : SCENES[this.scene].gain, t, out ? 0.5 : 0.8);
+  }
+
   /* ---------- scenes ---------- */
   setScene(s: Scene) {
     if (s === this.scene) return;
@@ -371,7 +485,7 @@ class CafeAudio {
     const sc = SCENES[this.scene];
     this.lpBase = sc.lp;
     this.musicLP.frequency.setTargetAtTime(sc.lp, t, 0.2);
-    this.musicBus.gain.setTargetAtTime(sc.gain, t, 0.4);
+    this.musicBus.gain.setTargetAtTime(this.zone === "inside" ? sc.gain : 0.0001, t, 0.4);
     this.crackle?.gain.setTargetAtTime(sc.crackle, t, 0.3);
     this.murmur?.gain.setTargetAtTime(sc.murmur, t, 0.3);
     this.nextTime = t + 0.1;
@@ -383,11 +497,39 @@ class CafeAudio {
     this.apply();
   }
 
+  /* the visitor's last choice, remembered for this tab */
+  get wanted(): boolean {
+    try {
+      return sessionStorage.getItem("marcus:sound") === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  /* browsers need a gesture to start audio, so resume on the first press or key */
+  resumeOnGesture() {
+    if (!this.wanted || this.on) return;
+    const go = (e: Event) => {
+      window.removeEventListener("pointerdown", go, true);
+      window.removeEventListener("keydown", go, true);
+      if ((e.target as HTMLElement | null)?.closest?.(".world__sound,.inside__sound")) return;
+      if (!this.on) {
+        this.toggle();
+        window.dispatchEvent(new Event("marcus:sound"));
+      }
+    };
+    window.addEventListener("pointerdown", go, true);
+    window.addEventListener("keydown", go, true);
+  }
+
   /* must be called from a click */
   toggle(): boolean {
     this.init();
     this.applyScene();
     this.on = !this.on;
+    try {
+      sessionStorage.setItem("marcus:sound", this.on ? "1" : "0");
+    } catch {}
     this.apply();
     return this.on;
   }
@@ -395,7 +537,7 @@ class CafeAudio {
   /* leaning in: the music muffles while a panel is open */
   setFocus(on: boolean) {
     const c = this.ctx;
-    if (!c) return;
+    if (!c || this.zone !== "inside") return;
     const t = c.currentTime;
     this.musicLP.frequency.setTargetAtTime(on ? 900 : this.lpBase, t, 0.25);
     this.musicBus.gain.setTargetAtTime(on ? 0.34 : SCENES[this.scene].gain, t, 0.3);
@@ -408,6 +550,7 @@ class CafeAudio {
     const t = c.currentTime;
     this.master.gain.cancelScheduledValues(t);
     this.master.gain.setTargetAtTime(want ? 0.9 : 0.0001, t, want ? 0.6 : 0.35);
+    this.mix();
     if (want) {
       void c.resume();
       if (this.timer == null) {
@@ -485,6 +628,15 @@ class CafeAudio {
         this.hit(t, 0.001, 0.02, 0.25, "bandpass", 1800, 3, d);
         this.osc("sine", 90, t, 0.002, 0.1, 0.25, d, { f2: 55 });
         this.hit(t + 0.09, 0.001, 0.02, 0.18, "bandpass", 1400, 3, d);
+        break;
+      case "shutter":
+        for (let i = 0; i < 30; i++) {
+          const tt = t + i * 0.075 + Math.random() * 0.02;
+          this.hit(tt, 0.001, 0.05, Math.max(0.02, 0.1 - i * 0.002), "bandpass", 1400 + Math.random() * 1300, 2.5, d);
+        }
+        this.hit(t, 0.25, 2.1, 0.07, "lowpass", 280, 0.7, d, 150);
+        this.hit(t + 2.4, 0.001, 0.09, 0.2, "bandpass", 850, 2, d);
+        this.osc("sine", 80, t + 2.4, 0.002, 0.25, 0.22, d, { f2: 45 });
         break;
       case "bell":
         [1568, 2093].forEach((f, i) => this.osc("sine", f, t + i * 0.18, 0.003, 1.6, 0.08, d));

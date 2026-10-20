@@ -1,0 +1,206 @@
+html.intro-lock,
+html.intro-lock body { overflow: hidden; }
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  color: var(--ink);
+}
+
+/* the roller shutter */
+.intro__shutter {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  padding: var(--gutter);
+  background-color: #2d5b44;
+  background-image: radial-gradient(rgba(0, 0, 0, 0.2) 1px, transparent 1.4px);
+  background-size: 7px 7px;
+  will-change: transform;
+}
+.intro__shutter::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2.8rem;
+  background: #1b3a2a;
+  border-top: 4px solid var(--ink);
+}
+.intro__slats { position: absolute; inset: 0; display: flex; flex-direction: column; pointer-events: none; }
+.intro__slats i {
+  flex: 1;
+  border-bottom: 2px solid rgba(15, 12, 8, 0.55);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0, rgba(255, 255, 255, 0) 38%, rgba(0, 0, 0, 0.28) 100%);
+}
+.intro__handle {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 0.85rem;
+  width: 5rem;
+  height: 0.9rem;
+  transform: translateX(-50%);
+  background: var(--ink);
+  border-radius: 99px;
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.2);
+}
+.intro__spray {
+  position: absolute;
+  left: 6vw;
+  top: 12vh;
+  transform: rotate(-6deg);
+  font-family: var(--font-hand);
+  font-size: clamp(1.6rem, 3.6vw, 3rem);
+  color: #efe9dc;
+  opacity: 0.8;
+  pointer-events: none;
+}
+@media (max-width: 800px) { .intro__spray { display: none; } }
+
+/* the hanging sign */
+.intro__sign {
+  position: relative;
+  z-index: 2;
+  width: min(30rem, calc(100vw - 2rem));
+  perspective: 1400px;
+  transform-origin: 50% -30vh;
+  animation: sway 5s ease-in-out infinite;
+}
+.intro.is-opening .intro__sign { animation: none; }
+@keyframes sway {
+  0%, 100% { transform: rotate(-1deg); }
+  50% { transform: rotate(1deg); }
+}
+@media (prefers-reduced-motion: reduce) { .intro__sign { animation: none; } }
+.intro__sign::before,
+.intro__sign::after {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  width: 3px;
+  height: 60vh;
+  background: var(--ink);
+}
+.intro__sign::before { left: 22%; }
+.intro__sign::after { right: 22%; }
+
+.intro__flip { position: relative; transform-style: preserve-3d; }
+.intro__face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background-color: var(--paper);
+  background-image: radial-gradient(rgba(23, 20, 15, 0.08) 1px, transparent 1.4px);
+  background-size: 7px 7px;
+  border: 3px solid var(--ink);
+  border-radius: 0.8rem;
+  box-shadow: 8px 8px 0 var(--ink);
+}
+.intro__front {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+  padding: 2.2rem 1.6rem 1.8rem;
+  text-align: center;
+}
+.intro__back {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.4rem;
+  transform: rotateY(180deg);
+}
+.intro__open {
+  font-family: var(--font-hand);
+  font-size: clamp(5rem, 20vw, 9rem);
+  line-height: 1;
+  color: #1f8f4e;
+}
+.intro__come { font-size: 0.8rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; }
+.intro__stamp {
+  position: absolute;
+  top: 0.9rem;
+  right: 1rem;
+  transform: rotate(8deg);
+  padding: 0.2rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #c2281d;
+  border: 2px solid #c2281d;
+  border-radius: 0.3rem;
+}
+
+.intro__logo {
+  display: grid;
+  place-items: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border: 2px solid var(--ink);
+  font-weight: 900;
+  letter-spacing: -0.06em;
+}
+.intro__name { font-family: var(--font-hand); font-size: clamp(3rem, 11vw, 5.4rem); line-height: 1; }
+.intro__role { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+.intro__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 2px solid var(--ink);
+  border-radius: 99px;
+}
+.intro__badge i { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: #1fb35a; }
+
+.intro__load { width: 100%; display: grid; gap: 0.5rem; margin-top: 0.8rem; }
+.intro__bar { display: block; height: 8px; overflow: hidden; border: 2px solid var(--ink); border-radius: 99px; }
+.intro__bar i {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+  transform-origin: 0 50%;
+  transition: transform 0.4s ease;
+}
+.intro__pct { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+
+/* the choices take their space from the start, so nothing jumps */
+.intro__choose { width: 100%; display: grid; gap: 0.7rem; margin-top: 0.3rem; }
+.intro__choose > * { opacity: 0; visibility: hidden; }
+.intro__choose button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.95rem 1.4rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+.intro__primary { color: var(--paper); background: var(--ink); box-shadow: 5px 5px 0 #ffc21a; }
+.intro__primary:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 #ffc21a; }
+.intro__ghost { background: transparent; }
+.intro__ghost:hover { background: var(--ink); color: var(--paper); }
+.intro__choose button:focus-visible { outline: 3px solid #ffc21a; outline-offset: 4px; }
+.intro__choose small { font-size: 0.72rem; font-weight: 700; opacity: 0.7; }
+
+/* a refresh skips the welcome screen. The class is set before the first paint. */
+html.skip-intro .intro { display: none; }

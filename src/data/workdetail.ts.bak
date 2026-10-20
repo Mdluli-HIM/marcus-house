@@ -1,0 +1,56 @@
+export type Shot = { src: string; caption: string; size: "full" | "half" };
+export type Detail = {
+  role: string;
+  year: string;
+  duration: string;
+  client: string;
+  stack: string[];
+  brief: string;
+  approach: string;
+  result: string;
+  gallery: Shot[];
+};
+
+/* placeholder gallery: swap the extension and captions when your real images are in */
+const shots = (slug: string): Shot[] => [
+  { src: `/work/${slug}/01.svg`, caption: "Home page", size: "full" },
+  { src: `/work/${slug}/02.svg`, caption: "Detail view", size: "half" },
+  { src: `/work/${slug}/03.svg`, caption: "On mobile", size: "half" },
+  { src: `/work/${slug}/04.svg`, caption: "Components", size: "full" },
+];
+
+export const fallback: Detail = {
+  role: "Design and development",
+  year: "2026",
+  duration: "4 weeks",
+  client: "Personal project",
+  stack: ["Next.js", "TypeScript"],
+  brief: "What the project had to do, and for whom.",
+  approach: "How you designed and built it.",
+  result: "What changed because of it.",
+  gallery: [],
+};
+
+const base = (slug: string, over: Partial<Detail>): Detail => ({
+  ...fallback,
+  gallery: shots(slug),
+  ...over,
+});
+
+export const details: Record<string, Detail> = {
+  point22: base("point22", {
+    role: "Design and front-end development",
+    year: "2026",
+    duration: "6 weeks",
+    client: "Personal project",
+    stack: ["Next.js 16", "React 19", "TypeScript", "GSAP", "Embla", "Lenis"],
+    brief: "Make a photographer's archive feel like a darkroom instead of a gallery grid.",
+    approach:
+      "An analogue ruler timeline, monochrome photography and negative-to-print transitions, built as one continuous scroll.",
+    result: "An infinite draggable timeline with a story page for every photograph.",
+  }),
+  "project-two": base("project-two", {}),
+  "project-three": base("project-three", {}),
+  "project-four": base("project-four", {}),
+  "project-five": base("project-five", {}),
+};

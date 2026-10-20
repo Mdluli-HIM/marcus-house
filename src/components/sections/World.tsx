@@ -1,9 +1,10 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { ArrowUpRight, DoorOpen } from "lucide-react";
+import { ArrowUpRight, DoorOpen, Volume2, VolumeX } from "lucide-react";
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 import { getLenis } from "@/lib/lenis";
+import { cafe } from "@/lib/audio";
 import { profile } from "@/data/profile";
 import { projects } from "@/data/projects";
 import Inside from "@/components/sections/Inside";
@@ -51,6 +52,9 @@ export default function World() {
   const enterRef = useRef<ReturnType<typeof gsap.timeline> | null>(null);
   const atDoorRef = useRef(false);
   const phase = useRef<"outside" | "entering" | "inside">("outside");
+  const restored = useRef(false);
+  const boot = useRef<{ p: number; was: boolean } | null>(null);
+  const hydrated = useRef(false);
 
   const [tick, setTick] = useState(0);
   const [active, setActive] = useState(-1);
@@ -58,11 +62,57 @@ export default function World() {
   const [inside, setInside] = useState(false);
   const [atDoor, setAtDoor] = useState(false);
   const [entering, setEntering] = useState(false);
+  const [sound, setSound] = useState(false);
+  const [wanted, setWanted] = useState(false);
 
   const setStep = useCallback((i: number) => {
     setActive(i);
     if (i >= 0) setShown(i);
   }, []);
+
+  /* the beach plays outside and the café inside. The zone follows the door. */
+  useEffect(() => {
+    cafe.setZone(inside ? "inside" : "outside");
+    if (!inside) setSound(cafe.enabled);
+  }, [inside]);
+
+  /* the welcome screen can switch sound on before the visitor touches anything else */
+  useEffect(() => {
+    const sync = () => {
+      setSound(cafe.enabled);
+      setWanted(false);
+    };
+    window.addEventListener("marcus:sound", sync);
+    return () => window.removeEventListener("marcus:sound", sync);
+  }, []);
+
+  /* remember where the visitor is, so a refresh puts them back */
+  useEffect(() => {
+    setWanted(cafe.wanted && !cafe.enabled);
+    let raf = 0;
+    const save = () => {
+      raf = 0;
+      const st = stRef.current;
+      if (!st || !hydrated.current) return;
+      try {
+        sessionStorage.setItem("marcus:p", st.progress.toFixed(4));
+      } catch {}
+    };
+    const on = () => {
+      if (!raf) raf = requestAnimationFrame(save);
+    };
+    window.addEventListener("scroll", on, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", on);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+  useEffect(() => {
+    if (!hydrated.current) return;
+    try {
+      sessionStorage.setItem("marcus:inside", inside ? "1" : "0");
+    } catch {}
+  }, [inside]);
 
   /* rebuild when the width changes meaningfully */
   useEffect(() => {
@@ -96,18 +146,34 @@ export default function World() {
     return () => window.removeEventListener("pointermove", move);
   }, []);
 
-  /* load-in animation (plays once) */
+  /* the shop opens: the world pulls back and warms up as the shutter rises */
   useGSAP(
     () => {
-      gsap.from(".world__stage", { opacity: 0, scale: 1.06, duration: 1.6, ease: "power3.out" });
-      gsap.from(".world__intro > *", {
-        y: 30,
-        opacity: 0,
-        duration: 0.8,
-        stagger: 0.15,
-        delay: 0.6,
-        ease: "power3.out",
-      });
+      const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const kids = ".world__intro > *";
+      gsap.set(".world__stage", { transformOrigin: "50% 64%", scale: calm ? 1 : 1.22 });
+      gsap.set(kids, { opacity: 0, y: 30 });
+      gsap.set(".world__dawn", { opacity: calm ? 0 : 1 });
+      let played = false;
+      const play = () => {
+        if (played) return;
+        played = true;
+        if (calm) {
+          gsap.to(kids, { opacity: 1, y: 0, duration: 0.6, stagger: 0.12 });
+          return;
+        }
+        gsap.to(".world__stage", { scale: 1, duration: 3.4, ease: "power3.out" });
+        gsap.to(".world__dawn", { opacity: 0, duration: 3.6, ease: "sine.inOut" });
+        gsap.to(kids, { opacity: 1, y: 0, duration: 0.9, stagger: 0.18, delay: 2, ease: "power3.out" });
+      };
+      window.addEventListener("marcus:open", play);
+      if (document.documentElement.classList.contains("skip-intro")) {
+        played = true;
+        gsap.set(".world__stage", { scale: 1 });
+        gsap.set(".world__dawn", { opacity: 0 });
+        gsap.set(kids, { opacity: 1, y: 0 });
+      } else if (!document.querySelector(".intro")) play();
+      return () => window.removeEventListener("marcus:open", play);
     },
     { scope: root }
   );
@@ -126,6 +192,7 @@ export default function World() {
         atDoorRef.current = true;
         setAtDoor(true);
         setStep(0);
+        hydrated.current = true;
         return () => {
           reduced.current = false;
         };
@@ -258,6 +325,40 @@ export default function World() {
               }
             : {}),
         });
+
+        /* after a refresh, put the visitor back where they were.
+           The page can build twice in dev, so this reads storage once and
+           applies it on every build until the visitor does something. */
+        if (!restored.current) {
+          restored.current = true;
+          try {
+            const was = sessionStorage.getItem("marcus:inside") === "1";
+            const p = parseFloat(sessionStorage.getItem("marcus:p") || "0") || 0;
+            boot.current = { p: was ? DOOR_AT / D : p, was };
+          } catch {}
+          const stop = () => {
+            boot.current = null;
+            ["wheel", "touchstart", "keydown", "pointerdown"].forEach((e) => window.removeEventListener(e, stop));
+          };
+          ["wheel", "touchstart", "keydown", "pointerdown"].forEach((e) =>
+            window.addEventListener(e, stop, { passive: true })
+          );
+          window.setTimeout(stop, 3000);
+        }
+        const bt = boot.current;
+        const stt = stRef.current;
+        if (bt && stt && (bt.p > 0.001 || bt.was)) {
+          window.scrollTo(0, stt.start + bt.p * (stt.end - stt.start));
+          tl.progress(Math.min(1, bt.p), false);
+          if (bt.was) {
+            enter.progress(1);
+            phase.current = "inside";
+            setInside(true);
+            requestAnimationFrame(() => getLenis()?.stop());
+          }
+          ScrollTrigger.update();
+        }
+        hydrated.current = true;
 
         return () => {
           stRef.current = null;
@@ -395,6 +496,7 @@ export default function World() {
       </div>
 
       <div className="world__lantern" aria-hidden="true" />
+      <div className="world__dawn" aria-hidden="true" />
 
       <div className={`guide ${inside || entering ? "is-off" : ""}`} aria-hidden="true">
         <i className="guide__bar" />
@@ -474,6 +576,17 @@ export default function World() {
       {!inside && !entering && (
         <button className="world__skip" onClick={() => scrollToT(0.8)}>
           Skip the tour
+        </button>
+      )}
+
+      {!inside && !entering && (
+        <button
+          className={`world__sound ${sound ? "is-on" : ""}`}
+          onClick={() => setSound(cafe.toggle())}
+          aria-pressed={sound}
+        >
+          {sound ? <Volume2 size={16} /> : <VolumeX size={16} />}
+          <span>{sound ? "Sound on" : wanted ? "Resume sound" : "With sound"}</span>
         </button>
       )}
 

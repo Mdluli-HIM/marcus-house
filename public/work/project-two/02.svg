@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900">
+<rect width="1200" height="900" fill="#f2c14e"/>
+<rect width="1200" height="108" fill="#1f6f4a"/>
+<rect x="84" y="225" width="600" height="126" fill="#17140f"/>
+<rect x="84" y="405" width="432" height="31" fill="#17140f" opacity="0.5"/>
+<rect x="84" y="468" width="336" height="31" fill="#17140f" opacity="0.5"/>
+<rect x="744" y="198" width="360" height="540" fill="#1f6f4a"/>
+<text x="84" y="828" font-family="monospace" font-size="40" fill="#17140f">project-two / 02</text>
+</svg>

@@ -23,7 +23,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geist.variable} ${walter.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${geist.variable} ${walter.variable}`}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'try{if(sessionStorage.getItem("marcus:seen"))document.documentElement.classList.add("skip-intro");history.scrollRestoration="manual"}catch(e){}',
+          }}
+        />
+      </head>
       <body>
         <SmoothScroll>{children}</SmoothScroll>
       </body>

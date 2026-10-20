@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { gsap } from "@/lib/gsap";
 import { archive } from "@/data/archive";
 
+const ok = (u?: string) => !!u && /^https?:\/\//i.test(u.trim());
 const pad = (n: number) => String(n).padStart(2, "0");
 
 export default function Archive({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -99,17 +100,17 @@ export default function Archive({ open, onClose }: { open: boolean; onClose: () 
               ))}
             </ul>
             <div className="alinks">
-              {item.live && (
+              {ok(item.live) && (
                 <a className="pcard__cta" href={item.live} target="_blank" rel="noopener noreferrer">
-                  Live site <ArrowUpRight size={18} />
+                  View website <ArrowUpRight size={18} />
                 </a>
               )}
-              {item.figma && (
+              {ok(item.figma) && (
                 <a className="pcard__cta pcard__cta--ghost" href={item.figma} target="_blank" rel="noopener noreferrer">
-                  Figma <ArrowUpRight size={18} />
+                  View in Figma <ArrowUpRight size={18} />
                 </a>
               )}
-              {!item.live && !item.figma && <span className="alinks__soon">Links coming soon</span>}
+              {!ok(item.live) && !ok(item.figma) && <span className="alinks__soon">Links coming soon</span>}
             </div>
           </article>
         </div>

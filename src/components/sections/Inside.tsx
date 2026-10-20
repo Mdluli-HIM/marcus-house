@@ -132,7 +132,7 @@ export default function Inside({ active, onExit }: { active: boolean; onExit: ()
 
   /* music plays only while you are in the room and the tab is visible */
   useEffect(() => {
-    const upd = () => cafe.setPresent(active && !document.hidden);
+    const upd = () => cafe.setPresent(!document.hidden);
     upd();
     document.addEventListener("visibilitychange", upd);
     return () => document.removeEventListener("visibilitychange", upd);
@@ -159,10 +159,68 @@ export default function Inside({ active, onExit }: { active: boolean; onExit: ()
     };
   }, [explore]);
 
+  /* the sound switch is shared with the outside */
+  useEffect(() => {
+    if (active) setSound(cafe.enabled);
+  }, [active]);
+  useEffect(() => {
+    const sync = () => setSound(cafe.enabled);
+    window.addEventListener("marcus:sound", sync);
+    return () => window.removeEventListener("marcus:sound", sync);
+  }, []);
+
   /* each room has its own music */
   useEffect(() => {
     cafe.setScene(gallery ? "gallery" : wall ? "jazz" : "cafe");
   }, [gallery, wall]);
+
+  /* a refresh reopens the project wall if it was open */
+  const bootWall = useRef(false);
+  const liveWall = useRef(false);
+  useEffect(() => {
+    try {
+      bootWall.current = sessionStorage.getItem("marcus:wall") === "1";
+    } catch {}
+  }, []);
+  useEffect(() => {
+    if (!active) return;
+    if (bootWall.current) {
+      bootWall.current = false;
+      galleryRef.current = true;
+      setWall(true);
+    }
+    liveWall.current = true;
+  }, [active]);
+  useEffect(() => {
+    if (!liveWall.current) return;
+    try {
+      sessionStorage.setItem("marcus:wall", wall ? "1" : "0");
+    } catch {}
+  }, [wall]);
+
+  /* a refresh reopens the art wall if it was open */
+  const bootGallery = useRef(false);
+  const liveGallery = useRef(false);
+  useEffect(() => {
+    try {
+      bootGallery.current = sessionStorage.getItem("marcus:gallery") === "1";
+    } catch {}
+  }, []);
+  useEffect(() => {
+    if (!active) return;
+    if (bootGallery.current) {
+      bootGallery.current = false;
+      galleryRef.current = true;
+      setGallery(true);
+    }
+    liveGallery.current = true;
+  }, [active]);
+  useEffect(() => {
+    if (!liveGallery.current) return;
+    try {
+      sessionStorage.setItem("marcus:gallery", gallery ? "1" : "0");
+    } catch {}
+  }, [gallery]);
 
   /* a calm welcome when you step in */
   useEffect(() => {
