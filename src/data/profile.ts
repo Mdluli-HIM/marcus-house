@@ -5,6 +5,7 @@ export const profile = {
   tagline: "I design and build websites that look distinctive and run fast.",
   location: "Limpopo, South Africa",
   availability: "Open for work",
+  siteUrl: "https://marcus-house.vercel.app",
   email: "you@email.com",
   socials: { github: "", linkedin: "", behance: "" },
   nav: [

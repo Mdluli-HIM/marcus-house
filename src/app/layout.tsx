@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Walter_Turncoat } from "next/font/google";
 import SmoothScroll from "@/components/layout/SmoothScroll";
+import { profile } from "@/data/profile";
 import "./globals.css";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
@@ -11,6 +12,8 @@ const walter = Walter_Turncoat({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(profile.siteUrl),
+  alternates: { canonical: "/" },
   title: "Marcus Mdluli | Creative Designer & Software Developer",
   description:
     "Creative designer and software developer building distinctive, high-performance websites and web apps. Available for full-time roles and freelance projects.",
@@ -18,6 +21,13 @@ export const metadata: Metadata = {
     title: "Marcus Mdluli | Creative Designer & Software Developer",
     description: "Design-led web development: UI design, Next.js, React and motion.",
     type: "website",
+    url: "/",
+    siteName: "Marcus Mdluli",
+  },
+  twitter: {
+    card: "summary",
+    title: "Marcus Mdluli | Creative Designer & Software Developer",
+    description: "Design-led web development: UI design, Next.js, React and motion.",
   },
 };
 
