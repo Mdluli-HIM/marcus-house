@@ -184,3 +184,68 @@
   .wallv__chip { display: none; }
   .wallv__back { bottom: auto; top: 6.2rem; }
 }
+
+/* bigger mockup on the posters */
+.wp__mock { left: 4cqw; right: 4cqw; top: 38%; height: 43%; }
+.wp__mock img { object-position: 50% 100%; transform-origin: 50% 100%; }
+.wp.is-hover .wp__mock img { transform: scale(1.08); }
+
+/* ---------- enlarged view on hover ---------- */
+.wp {
+  pointer-events: none;
+  transform-origin: 0 0;
+  transition: filter 0.45s ease, transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease;
+}
+.wp.is-hover {
+  z-index: 5;
+  transform: translate(var(--tx), var(--ty)) scale(var(--s));
+  outline: 3px solid var(--ink);
+  box-shadow: 0 24px 40px -12px rgba(0, 0, 0, 0.55);
+}
+.wp.is-hover .wp__paper { transform: none; }
+.wp.is-hover .wp__mock img { transform: none; }
+
+/* the rest of the wall steps back */
+.wallv__stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: rgba(26, 16, 8, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.wallv__stage.has-hover::after { opacity: 1; }
+
+/* the label moves to the bottom so it never covers the poster */
+.wallv__chip {
+  left: 50% !important;
+  top: auto !important;
+  bottom: 1.5rem;
+  z-index: 6;
+  transform: translate(-50%, 8px);
+}
+.wallv__chip.is-on { transform: translate(-50%, 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wp { transition: none; }
+}
+
+/* ---------- hover pushes the camera into the wall ---------- */
+.wallv__cam {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* the posters stay in their frames. The camera does the zooming. */
+.wp.is-hover {
+  z-index: 1;
+  transform: none;
+  outline: 0;
+  box-shadow: none;
+}
+.wp.is-hover .wp__paper { transform: none; }
+.wallv__stage::after { display: none; }

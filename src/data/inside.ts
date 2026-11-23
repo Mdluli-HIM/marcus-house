@@ -20,8 +20,8 @@ export const hotspots: Hotspot[] = [
     kicker: "Hello",
     title: "I'm Marcus.",
     paragraphs: [
-      "I'm a creative designer and software developer based in Limpopo, South Africa. I design interfaces and build them myself, so what gets approved is what ships.",
-      "[Replace this with your story: where you started, what you care about, what you're working on now.]",
+      "I'm a creative designer and software developer. I design interfaces and build them myself, so what gets approved is what ships.",
+      "Right now I am building The Wellness App, a daily wellness app for lifters, runners and walkers. It brings check-ins, GPS runs, progress photos and crews together, and compares people by percentage improvement instead of raw numbers. It is built with Expo, TypeScript and Supabase, and it is still in progress.",
     ],
     points: ["Creative designer", "Software developer", "Open for work"],
     spot: { x: 62, y: 54 },

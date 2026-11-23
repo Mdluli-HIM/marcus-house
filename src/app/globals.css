@@ -6,6 +6,7 @@
 @import "../styles/work.css";
 @import "../styles/archive.css";
 @import "../styles/project.css";
+@import "../styles/peek.css";
 @import "../styles/intro.css";
 
 * { box-sizing: border-box; margin: 0; padding: 0; }

@@ -89,3 +89,71 @@ export const works: Work[] = [
     figma: "",
   },
 ];
+
+// Tzaneen Taxi: inserted as the second poster on the wall
+works.splice(1, 0, {
+  slug: "tzaneen-taxi",
+  title: "Tzaneen Taxi",
+  subtitle: "Name-your-price rides for Tzaneen's villages",
+  colors: ["#111111", "#D9372C"],
+  mockup: "/work/tzaneen-taxi.png",
+  specs: [
+    "Riders name a price, drivers offer",
+    "Next.js PWA with Express API",
+    "SQLite triggers prevent double-booking",
+    "SMS sign-in, SOS, trip sharing",
+  ],
+  live: "https://tzaneenride.co.za",
+  figma: "",
+});
+
+// Fresh Goods: inserted as the third poster on the wall
+works.splice(2, 0, {
+  slug: "fresh-goods",
+  title: "Fresh Goods",
+  subtitle: "Responsive grocery shop web app",
+  colors: ["#16664B", "#FF591F"],
+  mockup: "/work/fresh-goods.png",
+  specs: [
+    "Next.js 16, JavaScript, CSS Modules",
+    "Typo-tolerant search, SA synonyms",
+    "Private demo stores via join code",
+    "Checkout with delivery slots, test payments",
+  ],
+  live: "",
+  figma: "",
+});
+
+// The Wellness App: inserted as the fourth poster on the wall
+works.splice(3, 0, {
+  slug: "the-wellness-app",
+  title: "The Wellness App",
+  subtitle: "Daily wellness for lifters, runners and walkers",
+  colors: ["#000000", "#7DDCA9"],
+  mockup: "/work/the-wellness-app.png",
+  specs: [
+    "Check-ins, sleep, training, progress photos",
+    "GPS runs with Ghost mode",
+    "Crews compared by % only",
+    "Expo, TypeScript, Supabase",
+  ],
+  live: "",
+  figma: "",
+});
+
+// Lifely: inserted as the fifth poster on the wall
+works.splice(4, 0, {
+  slug: "lifely",
+  title: "Lifely",
+  subtitle: "Patient app and clinic dashboard, one system",
+  colors: ["#E6E6E4", "#D0FF30"],
+  mockup: "/work/lifely.png",
+  specs: [
+    "Expo patient app, Next.js dashboard",
+    "Supabase Postgres with row-level security",
+    "Compulsory two-step login for staff",
+    "Double booking blocked by database",
+  ],
+  live: "",
+  figma: "",
+});

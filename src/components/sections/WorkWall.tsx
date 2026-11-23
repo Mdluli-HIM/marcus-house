@@ -15,6 +15,7 @@ const frames = wall.frames as Frame[];
 const GX = 0.12; /* the poster tucks this far under the frame, in % of the wall width */
 const GY = GX * wall.aspect;
 
+
 /* the vinyl crate on the wall: the way into the archive. x, y, w, h are % of the wall picture */
 const CRATE = { x: 16.6, y: 71, w: 26.4, h: 15 };
 
@@ -75,7 +76,7 @@ export default function WorkWall({ open, onClose }: { open: boolean; onClose: ()
     const w = items[i];
     const el = root.current?.querySelectorAll(".wp")[i] as HTMLElement | undefined;
     if (el && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      gsap.fromTo(el, { scale: 0.96 }, { scale: 1, duration: 0.8, ease: "elastic.out(1, 0.4)" });
+      /* the poster grows into the project page instead */
     }
     if (w.slug === "next") {
       window.location.href = `mailto:${profile.email}`;
@@ -158,6 +159,58 @@ export default function WorkWall({ open, onClose }: { open: boolean; onClose: ()
     };
   }, [open, onClose]);
 
+  const cam = useRef<HTMLDivElement>(null);
+  const leaveT = useRef(0);
+
+  /* push the camera into a frame. It scales about the frame's own centre, so the pointer
+     stays inside the frame as it grows, and it only shifts to keep the frame on screen. */
+  const zoomTo = (i: number) => {
+    window.clearTimeout(leaveT.current);
+    const el = root.current;
+    const c = cam.current;
+    const st = el?.querySelector(".wallv__stage") as HTMLElement | null;
+    if (!el || !c || !st) return;
+    if (window.matchMedia("(hover: none)").matches || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const vw = el.clientWidth;
+    const vh = el.clientHeight;
+    const sw = st.offsetWidth;
+    const sh = st.offsetHeight;
+    const left = st.offsetLeft - sw / 2;
+    const top = st.offsetTop - sh / 2;
+    const f = frames[i];
+    const fw = (f.w / 100) * sw;
+    const fh = (f.h / 100) * sh;
+    const px = left + ((f.x + f.w / 2) / 100) * sw;
+    const py = top + ((f.y + f.h / 2) / 100) * sh;
+    const k = Math.max(1.2, Math.min(3.4, Math.min((vw * 0.5) / fw, (vh * 0.68) / fh)));
+    const edge = (lo: number, hi: number) => Math.max(lo, Math.min(hi, 0));
+    const dx = edge(24 - (px - (k * fw) / 2), vw - 24 - (px + (k * fw) / 2));
+    const dy = edge(24 - (py - (k * fh) / 2), vh - 72 - (py + (k * fh) / 2));
+    gsap.to(c, { scale: k, x: px * (1 - k) + dx, y: py * (1 - k) + dy, duration: 0.9, ease: "power3.inOut", overwrite: true });
+  };
+
+  const pullBack = () => {
+    if (cam.current) gsap.to(cam.current, { scale: 1, x: 0, y: 0, duration: 0.8, ease: "power3.inOut", overwrite: true });
+  };
+
+  /* a short delay, so crossing the gap between two frames does not pull back and push in again */
+  const leave = () => {
+    setHover(-1);
+    window.clearTimeout(leaveT.current);
+    leaveT.current = window.setTimeout(pullBack, 140);
+  };
+
+  useEffect(() => {
+    if (!pageOpen) {
+      setHover(-1);
+      pullBack();
+    }
+  }, [pageOpen]);
+  useEffect(() => {
+    if (!open && cam.current) gsap.set(cam.current, { scale: 1, x: 0, y: 0 });
+  }, [open]);
+  useEffect(() => () => window.clearTimeout(leaveT.current), []);
+
   const t = frames[tip];
 
   return (
@@ -168,6 +221,7 @@ export default function WorkWall({ open, onClose }: { open: boolean; onClose: ()
       aria-hidden={!open}
       style={{ background: wall.bg, ["--wa" as string]: wall.aspect }}
     >
+      <div className="wallv__cam" ref={cam}>
       <div className={`wallv__stage ${hover >= 0 ? "has-hover" : ""}`}>
         {frames.map((f, i) => {
           const w = items[i];
@@ -240,17 +294,21 @@ export default function WorkWall({ open, onClose }: { open: boolean; onClose: ()
             onPointerEnter={() => {
               setHover(i);
               setTip(i);
+              zoomTo(i);
             }}
-            onPointerLeave={() => setHover(-1)}
+            onPointerLeave={leave}
             onFocus={() => {
               setHover(i);
               setTip(i);
+              zoomTo(i);
             }}
-            onBlur={() => setHover(-1)}
+            onBlur={leave}
             tabIndex={open ? 0 : -1}
             aria-label={`${items[i].title}, ${items[i].subtitle}. View project ${i + 1}`}
           />
         ))}
+      </div>
+      </div>
 
         <span
           className={`wallv__chip ${hover >= 0 ? "is-on" : ""}`}
@@ -259,7 +317,6 @@ export default function WorkWall({ open, onClose }: { open: boolean; onClose: ()
         >
           {pad(tip + 1)} · {items[tip].title} · View ↗
         </span>
-      </div>
 
       <ProjectPage
         index={page}

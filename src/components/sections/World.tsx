@@ -7,6 +7,8 @@ import { getLenis } from "@/lib/lenis";
 import { cafe } from "@/lib/audio";
 import { profile } from "@/data/profile";
 import { projects } from "@/data/projects";
+import { PeekVisual, PeekLink } from "./ProjectPeek";
+import PeekTheatre from "./PeekTheatre";
 import Inside from "@/components/sections/Inside";
 
 const WORLD_SRC = "/images/world.png";
@@ -233,7 +235,7 @@ export default function World() {
         tl.to(".world__intro", { autoAlpha: 0, y: -20, duration: 0.6, ease: "power1.in" }, 0);
 
         /* the tour: camera walks neuron to neuron, drawing synapses */
-        const S = small ? 1.5 : 1.7;
+        const S = small ? 2.1 : 1.7;
         projects.forEach((p, i) => {
           const t = TOUR_START + i * STEP;
           tl.to(cam, { ...focus(p.spot.x, p.spot.y, S), duration: SETTLE, ease: "power2.inOut" }, t);
@@ -251,7 +253,7 @@ export default function World() {
         /* the scroll ends in front of the door. Opening it is a separate, deliberate press. */
         const dcx = DOOR.x + DOOR.w / 2;
         const dcy = DOOR.y + DOOR.h / 2;
-        tl.to(cam, { ...focus(dcx, dcy, small ? 3 : 3.6, true), duration: SETTLE, ease: "power2.inOut" }, END);
+        tl.to(cam, { ...focus(dcx, dcy, small ? 3.2 : 3.6, true), duration: SETTLE, ease: "power2.inOut" }, END);
         tl.addLabel("door", DOOR_AT);
         tl.to({}, { duration: 1.4 }, DOOR_AT);
 
@@ -433,6 +435,11 @@ export default function World() {
     enterRef.current?.timeScale(1.5).reverse();
   };
 
+  const [theatre, setTheatre] = useState<{
+    slug: string;
+    from: { top: number; left: number; width: number; height: number };
+  } | null>(null);
+
   const p = projects[shown];
 
   return (
@@ -447,7 +454,7 @@ export default function World() {
             alt="Illustrated creative developer studio shopfront"
             fill
             priority
-            sizes="100vw"
+            sizes="(max-width: 800px) 420vw, 100vw"
           />
 
           <div
@@ -519,6 +526,12 @@ export default function World() {
           </span>
           <span className="pcard__tag">{p.tag}</span>
         </div>
+        <PeekVisual
+          key={p.slug}
+          slug={p.slug}
+          on={active >= 0 && !theatre}
+          onOpen={(from) => setTheatre({ slug: p.slug, from })}
+        />
         <h3>{p.title}</h3>
         <p className="pcard__role">{p.role}</p>
         <p>{p.summary}</p>
@@ -539,6 +552,7 @@ export default function World() {
             <li key={s}>{s}</li>
           ))}
         </ul>
+        <PeekLink slug={p.slug} />
         {p.kind === "invite" && (
           <div className="pcard__row">
             <button className="pcard__cta" onClick={openDoor}>
@@ -588,6 +602,10 @@ export default function World() {
           {sound ? <Volume2 size={16} /> : <VolumeX size={16} />}
           <span>{sound ? "Sound on" : wanted ? "Resume sound" : "With sound"}</span>
         </button>
+      )}
+
+      {theatre && (
+        <PeekTheatre slug={theatre.slug} from={theatre.from} onClose={() => setTheatre(null)} />
       )}
 
       <Inside active={inside} onExit={leave} />

@@ -1,4 +1,6 @@
 "use client";
+import RoomPan from "./RoomPan";
+import PanelCue from "./PanelCue";
 /* eslint-disable @next/next/no-img-element */
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -602,6 +604,24 @@ export default function Inside({ active, onExit }: { active: boolean; onExit: ()
 
   const toggleSound = () => setSound(cafe.toggle());
 
+  /* touch: swipe up goes to the next point, swipe down to the previous one */
+  useEffect(() => {
+    const onStep = (e: Event) => {
+      if (gallery || wall) return;
+      const d = (e as CustomEvent<number>).detail;
+      const cur = openRef.current;
+      if (d > 0) {
+        if (cur < hotspots.length - 1) pick(cur + 1);
+      } else if (cur === 0) {
+        close();
+      } else if (cur > 0) {
+        pick(cur - 1);
+      }
+    };
+    window.addEventListener("marcus:room-step", onStep);
+    return () => window.removeEventListener("marcus:room-step", onStep);
+  });
+
   const h = open >= 0 ? hotspots[open] : null;
 
   return (
@@ -619,7 +639,7 @@ export default function Inside({ active, onExit }: { active: boolean; onExit: ()
             alt="Inside the studio: Marcus at his desk with a laptop and a cup of coffee"
             fill
             loading="eager"
-            sizes="100vw"
+            sizes="(max-width: 800px) 420vw, 100vw"
           />
           <RoomGL
             active={active}
@@ -715,17 +735,10 @@ export default function Inside({ active, onExit }: { active: boolean; onExit: ()
           ))}
         </div>
 
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          className="inside__fore"
-          src="/images/interior-fore.png"
-          alt=""
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
-        />
       </div>
 
+      <RoomPan rootRef={root} active={active} />
+      <PanelCue rootRef={root} active={active} />
       <Gallery open={gallery} onClose={leaveGallery} />
       <WorkWall open={wall} onClose={leaveWall} />
 

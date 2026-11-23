@@ -605,3 +605,180 @@
   .explore__menu { left: auto; right: 0; transform: translate(0, 8px); }
   .explore__menu.is-on { transform: none; }
 }
+
+/* touch: the room can be dragged sideways */
+@media (pointer: coarse) { .inside__cam { touch-action: none; } }
+.roompan {
+  position: absolute;
+  left: 50%;
+  bottom: 12.5rem;
+  z-index: 20;
+  padding: 0.65rem 1.1rem;
+  border-radius: 999px;
+  background: #14110d;
+  color: #ece5d6;
+  font: 700 0.75rem/1 ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: roompan 2.4s ease-in-out infinite;
+}
+@keyframes roompan {
+  0%, 100% { transform: translateX(-50%); }
+  50% { transform: translateX(calc(-50% + 10px)); }
+}
+
+/* phones: the info card gets room, and says when there is more */
+@media (max-width: 800px) {
+  .panel {
+    max-height: 70svh;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding-bottom: 3rem;
+  }
+  .panel::after {
+    content: "Scroll \2304";
+    position: sticky;
+    bottom: -1px;
+    display: block;
+    margin-top: 0.2rem;
+    padding: 1.8rem 0 calc(0.3rem + env(safe-area-inset-bottom));
+    text-align: center;
+    font: 700 0.7rem/1 ui-monospace, "SF Mono", Menlo, monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: linear-gradient(to bottom, rgba(230, 225, 216, 0), #e6e1d8 60%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .panel.can-scroll:not(.at-end)::after {
+    opacity: 1;
+    animation: panelCue 1.6s ease-in-out infinite;
+  }
+}
+@keyframes panelCue {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+}
+
+/* phones: the info card gets room, and says when there is more */
+@media (max-width: 800px) {
+  .panel {
+    max-height: 70svh;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding-bottom: 3rem;
+  }
+  .panel::after {
+    content: "Scroll \2304";
+    position: sticky;
+    bottom: -1px;
+    display: block;
+    margin-top: 0.2rem;
+    padding: 1.8rem 0 calc(0.3rem + env(safe-area-inset-bottom));
+    text-align: center;
+    font: 700 0.7rem/1 ui-monospace, "SF Mono", Menlo, monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: linear-gradient(to bottom, rgba(230, 225, 216, 0), #e6e1d8 60%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .panel.can-scroll:not(.at-end)::after {
+    opacity: 1;
+    animation: panelCue 1.6s ease-in-out infinite;
+  }
+}
+@keyframes panelCue {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+}
+
+@media (max-width: 800px) {
+  @supports (height: 100dvh) {
+    .inside { min-height: 100dvh; }
+    .inside__stage { --sw: max(101.6vw, calc(101.6dvh * var(--ia))); }
+  }
+}
+
+/* phones: Prev/Next always visible, the scroll cue sits right above them */
+@media (max-width: 800px) {
+  .panel::after { display: none !important; }
+
+  .panel__nav {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin-top: 0.9rem;
+    padding: 0.8rem 0 calc(0.4rem + env(safe-area-inset-bottom));
+    background: #e6e1d8;
+    border-top: 2px solid #14110d;
+  }
+  .panel__nav::before {
+    content: "Scroll \2304";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(100% + 2px);
+    height: 2.6rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 0.45rem;
+    font: 700 0.7rem/1 ui-monospace, "SF Mono", Menlo, monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: linear-gradient(to bottom, rgba(230, 225, 216, 0), #e6e1d8 85%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .panel.can-scroll:not(.at-end) .panel__nav::before {
+    opacity: 1;
+    animation: panelCue 1.6s ease-in-out infinite;
+  }
+}
+
+/* phones: Prev/Next always visible, the scroll cue sits right above them */
+@media (max-width: 800px) {
+  .panel::after { display: none !important; }
+
+  .panel__nav {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin-top: 0.9rem;
+    padding: 0.8rem 0 calc(0.4rem + env(safe-area-inset-bottom));
+    background: #e6e1d8;
+    border-top: 2px solid #14110d;
+  }
+  .panel__nav::before {
+    content: "Scroll \2304";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(100% + 2px);
+    height: 2.6rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 0.45rem;
+    font: 700 0.7rem/1 ui-monospace, "SF Mono", Menlo, monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: linear-gradient(to bottom, rgba(230, 225, 216, 0), #e6e1d8 85%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .panel.can-scroll:not(.at-end) .panel__nav::before {
+    opacity: 1;
+    animation: panelCue 1.6s ease-in-out infinite;
+  }
+}
